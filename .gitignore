@@ -1,0 +1,7 @@
+# Exclude generated file for development
+*.txt
+sample/
+vision-hocr
+
+# Exclude image for development
+*.jpg
