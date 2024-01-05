@@ -17,7 +17,6 @@ import (
 type OcrOptions struct {
 	NWorker       int64
 	RewriteOutput bool
-	KeepHyphen    bool
 }
 
 func runOCR(rootDir string, opts OcrOptions) ([]vision.Page, error) {
@@ -87,7 +86,7 @@ func runOCR(rootDir string, opts OcrOptions) ([]vision.Page, error) {
 			}()
 
 			// Parse image
-			page, err := vision.ParseImage(ctx, imgPath, opts.KeepHyphen)
+			page, err := vision.ParseImage(ctx, imgPath)
 			if err != nil {
 				msg := fmt.Errorf("ocr failed for \"%s\": %w", imgPath, err)
 				logrus.Warn(msg)

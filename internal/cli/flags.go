@@ -13,8 +13,6 @@ const (
 	_genDebug = "gen-debug"
 
 	// Flag names for OCR parameters
-	_keepHyphen   = "keep-hyphen"
-	_keepFormat   = "keep-format"
 	_sortVertical = "sort-vertical"
 
 	// Flag names for text cleaner
@@ -52,15 +50,6 @@ var appFlags = []cli.Flag{
 	},
 
 	// Flags for OCR parameters
-	&cli.BoolFlag{
-		Name:  _keepHyphen,
-		Usage: "keep the hyphens",
-	},
-	&cli.BoolFlag{
-		Name:    _keepFormat,
-		Aliases: []string{"k"},
-		Usage:   "attempt to keep formatting (so far only italic)",
-	},
 	&cli.BoolFlag{
 		Name:    _sortVertical,
 		Aliases: []string{"sv"},

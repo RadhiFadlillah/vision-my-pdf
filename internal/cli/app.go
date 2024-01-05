@@ -40,7 +40,6 @@ func appActionHandler() cli.ActionFunc {
 		// Run OCR concurrently
 		pages, err := runOCR(rootDir, OcrOptions{
 			NWorker:       nWorker,
-			KeepHyphen:    c.Bool(_keepHyphen),
 			RewriteOutput: c.Bool(_force)})
 		if err != nil {
 			return err

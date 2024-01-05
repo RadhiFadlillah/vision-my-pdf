@@ -13,7 +13,7 @@ import (
 	"github.com/anthonynsimon/bild/imgio"
 )
 
-func ParseImage(ctx context.Context, file string, keepHyphen bool) (*Page, error) {
+func ParseImage(ctx context.Context, file string) (*Page, error) {
 	// Open vision client API
 	client, err := vision.NewImageAnnotatorClient(ctx)
 	if err != nil {
@@ -71,7 +71,7 @@ func ParseImage(ctx context.Context, file string, keepHyphen bool) (*Page, error
 	for _, page := range annotations.Pages {
 		for _, block := range page.Blocks {
 			for _, paragraph := range block.Paragraphs {
-				p := parseParagraph(paragraph, keepHyphen)
+				p := parseParagraph(paragraph)
 				result.Paragraphs = append(result.Paragraphs, p)
 			}
 		}
@@ -80,7 +80,7 @@ func ParseImage(ctx context.Context, file string, keepHyphen bool) (*Page, error
 	return &result, nil
 }
 
-func parseParagraph(paragraph *visionpb.Paragraph, keepHyphen bool) Paragraph {
+func parseParagraph(paragraph *visionpb.Paragraph) Paragraph {
 	// Prepare result
 	result := Paragraph{
 		BoundingBox: bpToRect(paragraph.BoundingBox),
@@ -89,7 +89,7 @@ func parseParagraph(paragraph *visionpb.Paragraph, keepHyphen bool) Paragraph {
 	// Process each word inside it
 	var words []Word
 	for _, word := range paragraph.Words {
-		parsedWord := parseWord(word, keepHyphen)
+		parsedWord := parseWord(word)
 		if len(parsedWord.Symbols) > 0 {
 			words = append(words, parsedWord)
 		}
@@ -142,7 +142,7 @@ func parseParagraph(paragraph *visionpb.Paragraph, keepHyphen bool) Paragraph {
 	return result
 }
 
-func parseWord(word *visionpb.Word, keepHyphen bool) Word {
+func parseWord(word *visionpb.Word) Word {
 	// Prepare result
 	result := Word{
 		BoundingBox: bpToRect(word.BoundingBox),
@@ -151,7 +151,7 @@ func parseWord(word *visionpb.Word, keepHyphen bool) Word {
 	// Process each symbol inside it
 	for _, symbol := range word.Symbols {
 		// Check if symbol has break
-		prefix, suffix := createBreakCharacter(symbol, keepHyphen)
+		prefix, suffix := createBreakCharacter(symbol)
 
 		// Save the symbol
 		s := Symbol{
@@ -177,7 +177,7 @@ func parseWord(word *visionpb.Word, keepHyphen bool) Word {
 	return result
 }
 
-func createBreakCharacter(symbol *visionpb.Symbol, keepHyphen bool) (prefix, suffix string) {
+func createBreakCharacter(symbol *visionpb.Symbol) (prefix, suffix string) {
 	// Make sure symbol has property
 	prop := symbol.Property
 	if prop == nil {
@@ -195,10 +195,7 @@ func createBreakCharacter(symbol *visionpb.Symbol, keepHyphen bool) (prefix, suf
 
 	switch db.Type {
 	case visionpb.TextAnnotation_DetectedBreak_HYPHEN:
-		bc = "\n"
-		if keepHyphen {
-			bc = "-\n"
-		}
+		bc = "-\n"
 	case visionpb.TextAnnotation_DetectedBreak_LINE_BREAK,
 		visionpb.TextAnnotation_DetectedBreak_EOL_SURE_SPACE:
 		bc = "\n"
