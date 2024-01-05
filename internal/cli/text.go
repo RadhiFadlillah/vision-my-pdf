@@ -19,7 +19,7 @@ func savePagesAsText(tcl cleaner.Cleaner, pages []vision.Page, rootDir string) e
 	for _, page := range pages {
 		// Prepare output for this page
 		imgName := cleanFileName(page.Image)
-		textOutput := fp.Join(rootDir, "vision-text", imgName) + ".txt"
+		textOutput := fp.Join(rootDir, "vision-text", imgName) + "_hocr.txt"
 
 		// Build text for this page
 		pageText := pageToText(page)
