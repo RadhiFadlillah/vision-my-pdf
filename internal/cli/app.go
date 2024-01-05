@@ -59,6 +59,13 @@ func appActionHandler() cli.ActionFunc {
 			}
 		}
 
+		// Create text from OCR page
+		tcl := prepareTextCleaner(c)
+		err = savePagesAsText(tcl, pages, rootDir)
+		if err != nil {
+			return err
+		}
+
 		// Generate debug images
 		if c.Bool(_genDebug) {
 			err = saveDebugImages(pages, rootDir)
@@ -66,12 +73,6 @@ func appActionHandler() cli.ActionFunc {
 				return err
 			}
 		}
-
-		// Create text from OCR page
-		// err = savePagesAsText(c, pages, nil, dstDir)
-		// if err != nil {
-		// 	return err
-		// }
 
 		return nil
 	}
