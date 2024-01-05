@@ -20,7 +20,7 @@ func savePagesAsHOCR(tcl cleaner.Cleaner, pages []vision.Page, rootDir string) e
 	for _, page := range pages {
 		// Prepare output for this page
 		imgName := cleanFileName(page.Image)
-		textOutput := fp.Join(rootDir, "vision-hocr", imgName) + "_hocr.hocr"
+		textOutput := fp.Join(rootDir, imgName) + "_hocr.hocr"
 
 		// Build HOCR for this page
 		pageHOCR := pageToHOCR(tcl, page)

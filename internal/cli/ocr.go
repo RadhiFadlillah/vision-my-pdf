@@ -19,18 +19,7 @@ type OcrOptions struct {
 	RewriteOutput bool
 }
 
-func runOCR(rootDir string, opts OcrOptions) ([]vision.Page, error) {
-	// Get image paths
-	imagePaths, err := getImageNames(rootDir)
-	if err != nil {
-		return nil, err
-	}
-
-	// If there are no image, stop
-	if len(imagePaths) == 0 {
-		return nil, fmt.Errorf("no image detected")
-	}
-
+func runOCR(imagePaths []string, outputDir string, opts OcrOptions) ([]vision.Page, error) {
 	// Prepare concurrent helper
 	var wg sync.WaitGroup
 	var mut sync.Mutex
@@ -57,7 +46,7 @@ func runOCR(rootDir string, opts OcrOptions) ([]vision.Page, error) {
 	for _, imgPath := range imagePaths {
 		// Prepare output for this image
 		imgName := cleanFileName(imgPath) + ".json"
-		ocrOutput := fp.Join(rootDir, "vision-cache", imgName)
+		ocrOutput := fp.Join(outputDir, imgName)
 
 		// Check if output exists
 		if fileExist(ocrOutput) {

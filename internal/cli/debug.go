@@ -12,13 +12,13 @@ import (
 	"github.com/tdewolff/canvas/renderers"
 )
 
-func saveDebugImages(pages []vision.Page, rootDir string) error {
+func saveDebugImages(pages []vision.Page, outputDir string) error {
 	// Prepare font
 	roboto := canvas.NewFontFamily("Roboto")
 	roboto.MustLoadSystemFont("Roboto", canvas.FontBold)
 
 	for _, page := range pages {
-		if err := saveDebugImage(page, roboto, rootDir); err != nil {
+		if err := saveDebugImage(page, roboto, outputDir); err != nil {
 			return err
 		}
 	}
@@ -26,10 +26,10 @@ func saveDebugImages(pages []vision.Page, rootDir string) error {
 	return nil
 }
 
-func saveDebugImage(page vision.Page, fontFamily *canvas.FontFamily, rootDir string) error {
+func saveDebugImage(page vision.Page, fontFamily *canvas.FontFamily, outputDir string) error {
 	// Prepare output for this image
 	imgName := cleanFileName(page.Image)
-	debugOutput := fp.Join(rootDir, "vision-debug", imgName) + ".png"
+	debugOutput := fp.Join(outputDir, imgName) + ".png"
 
 	// Open the image
 	f, err := os.Open(page.Image)

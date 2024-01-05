@@ -1,8 +1,11 @@
 package cli
 
 import (
+	"fmt"
+	"path/filepath"
 	"runtime"
 	"sort"
+	"time"
 
 	"github.com/urfave/cli/v2"
 )
@@ -31,14 +34,38 @@ func appActionHandler() cli.ActionFunc {
 			return err
 		}
 
-		// Prepare temporary dirs
-		err = prepareTemporaryDirs(rootDir)
+		// Get image paths and other relevant files
+		imagePaths, oldFiles, err := getRelevantFiles(rootDir)
+		if err != nil {
+			return err
+		}
+
+		// If there are no image, stop
+		if len(imagePaths) == 0 {
+			return fmt.Errorf("no image detected")
+		}
+
+		// Prepare output dirs
+		now := time.Now().Format("20060102150405")
+		cacheDir := filepath.Join(rootDir, "vision-cache")
+		debugDir := filepath.Join(rootDir, "vision-debug")
+		backupDir := filepath.Join(rootDir, fmt.Sprintf("vision-backup-%s", now))
+
+		outputDirs := []string{cacheDir}
+		if len(oldFiles) > 0 {
+			outputDirs = append(outputDirs, backupDir)
+		}
+		if c.Bool(_genDebug) {
+			outputDirs = append(outputDirs, debugDir)
+		}
+
+		err = prepareOutputDirs(outputDirs...)
 		if err != nil {
 			return err
 		}
 
 		// Run OCR concurrently
-		pages, err := runOCR(rootDir, OcrOptions{
+		pages, err := runOCR(imagePaths, cacheDir, OcrOptions{
 			NWorker:       nWorker,
 			RewriteOutput: c.Bool(_force)})
 		if err != nil {
@@ -58,6 +85,16 @@ func appActionHandler() cli.ActionFunc {
 			}
 		}
 
+		// Save the old text and HOCR to backup dir
+		if len(oldFiles) > 0 {
+			for _, of := range oldFiles {
+				err = copyFile(of, backupDir)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
 		// Create text from OCR page
 		tcl := prepareTextCleaner(c)
 		err = savePagesAsText(tcl, pages, rootDir)
@@ -73,7 +110,7 @@ func appActionHandler() cli.ActionFunc {
 
 		// Generate debug images
 		if c.Bool(_genDebug) {
-			err = saveDebugImages(pages, rootDir)
+			err = saveDebugImages(pages, debugDir)
 			if err != nil {
 				return err
 			}
