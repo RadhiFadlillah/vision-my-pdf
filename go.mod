@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/vision v1.2.0
 	cloud.google.com/go/vision/v2 v2.7.5
 	github.com/anthonynsimon/bild v0.13.0
+	github.com/go-shiori/dom v0.0.0-20230515143342-73569d674e1c
 	github.com/sirupsen/logrus v1.9.3
 	github.com/tdewolff/canvas v0.0.0-20231218015800-2ad5075e9362
 	github.com/urfave/cli/v2 v2.27.1
@@ -19,6 +20,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/longrunning v0.5.2 // indirect
 	github.com/ByteArena/poly2tri-go v0.0.0-20170716161910-d102ad91854f // indirect
+	github.com/andybalholm/cascadia v1.3.2 // indirect
 	github.com/benoitkugler/textlayout v0.3.0 // indirect
 	github.com/benoitkugler/textprocessing v0.0.3 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
@@ -26,6 +28,7 @@ require (
 	github.com/go-fonts/latin-modern v0.3.1 // indirect
 	github.com/go-latex/latex v0.0.0-20230307184459-12ec69307ad9 // indirect
 	github.com/go-text/typesetting v0.0.0-20231013144250-6cc35dbfae7d // indirect
+	github.com/gogs/chardet v0.0.0-20211120154057-b7413eaefb8f // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect

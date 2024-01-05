@@ -5,8 +5,9 @@ import (
 )
 
 type Page struct {
-	Image      string
-	Paragraphs []Paragraph
+	Image       string
+	Paragraphs  []Paragraph
+	BoundingBox image.Rectangle
 }
 
 type Paragraph struct {

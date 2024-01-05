@@ -1,3 +1,6 @@
+# Exclude config
+.vscode/
+
 # Exclude generated file for development
 *.txt
 sample/

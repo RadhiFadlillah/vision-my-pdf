@@ -66,6 +66,12 @@ func appActionHandler() cli.ActionFunc {
 			return err
 		}
 
+		// Create HOCR
+		err = savePagesAsHOCR(tcl, pages, rootDir)
+		if err != nil {
+			return err
+		}
+
 		// Generate debug images
 		if c.Bool(_genDebug) {
 			err = saveDebugImages(pages, rootDir)

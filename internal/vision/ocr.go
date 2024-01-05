@@ -67,7 +67,7 @@ func ParseImage(ctx context.Context, file string, keepHyphen bool) (*Page, error
 	}
 
 	// Parse page
-	result := Page{Image: absPath}
+	result := Page{Image: absPath, BoundingBox: img.Bounds()}
 	for _, page := range annotations.Pages {
 		for _, block := range page.Blocks {
 			for _, paragraph := range block.Paragraphs {

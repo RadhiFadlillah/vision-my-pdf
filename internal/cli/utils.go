@@ -17,6 +17,7 @@ func prepareTemporaryDirs(rootDir string) error {
 		"vision-cache",
 		"vision-debug",
 		"vision-text",
+		"vision-hocr",
 	}
 
 	for _, dir := range dirs {
