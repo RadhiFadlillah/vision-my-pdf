@@ -5,12 +5,15 @@ import (
 	"image"
 	"os"
 	fp "path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/RadhiFadlillah/vision-my-pdf/internal/cleaner"
 	"github.com/RadhiFadlillah/vision-my-pdf/internal/vision"
 	"github.com/go-shiori/dom"
 )
+
+var rxSymbolOnly = regexp.MustCompile(`^[^\p{L}\p{N}\s]+$`)
 
 func savePagesAsHOCR(tcl cleaner.Cleaner, pages []vision.Page, rootDir string) error {
 	// Process each page
@@ -116,11 +119,21 @@ func pageToHOCR(tcl cleaner.Cleaner, page vision.Page) string {
 				dom.SetAttribute(spanWord, "title", rectToString(w.BoundingBox))
 				dom.AppendChild(spanLine, spanWord)
 
+				// Get the previous sibling of span word
+				prevSpanWord := dom.PreviousElementSibling(spanWord)
+
 				// Set word text
 				wordText := wordToText(w)
 				wordText = tcl.Clean(wordText)
 				wordText = strings.TrimSpace(wordText)
-				dom.SetTextContent(spanWord, wordText)
+
+				// If its text only contains symbol, put it in the previous span
+				if rxSymbolOnly.MatchString(wordText) && prevSpanWord != nil {
+					dom.SetTextContent(prevSpanWord, dom.TextContent(prevSpanWord)+wordText)
+					spanLine.RemoveChild(spanWord)
+				} else {
+					dom.SetTextContent(spanWord, wordText)
+				}
 			}
 		}
 	}
