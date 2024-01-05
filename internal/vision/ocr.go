@@ -3,13 +3,14 @@ package vision
 import (
 	"bytes"
 	"context"
-	"io"
-	"os"
+	"image/png"
 	"path/filepath"
 	"strings"
 
 	vision "cloud.google.com/go/vision/apiv1"
 	visionpb "cloud.google.com/go/vision/v2/apiv1/visionpb"
+	"github.com/anthonynsimon/bild/effect"
+	"github.com/anthonynsimon/bild/imgio"
 )
 
 func ParseImage(ctx context.Context, file string, keepHyphen bool) (*Page, error) {
@@ -20,25 +21,31 @@ func ParseImage(ctx context.Context, file string, keepHyphen bool) (*Page, error
 	}
 
 	// Open file
-	f, err := os.Open(file)
+	img, err := imgio.Open(file)
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
 
-	// Use tee to reuse file
-	f2 := bytes.NewBuffer(nil)
-	f1 := io.TeeReader(f, f2)
-
-	// Validate image by making sure it's not empty
-	if valid, err := validateImage(f1); !valid {
+	// Make sure image is not empty
+	bounds := img.Bounds().Size()
+	if valid := bounds.X > 1 && bounds.Y > 1; !valid {
 		return nil, nil
-	} else if err != nil {
+	}
+
+	// Invert image, since Google vision seems to yield better performance
+	// with white text on black background.
+	inverted := effect.Invert(img)
+
+	// Encode to the new reader
+	var buf bytes.Buffer
+	err = png.Encode(&buf, inverted)
+	if err != nil {
 		return nil, err
 	}
 
 	// Decode visionImg for Google vision
-	visionImg, err := vision.NewImageFromReader(f2)
+	r := bytes.NewReader(buf.Bytes())
+	visionImg, err := vision.NewImageFromReader(r)
 	if err != nil {
 		return nil, err
 	}

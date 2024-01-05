@@ -5,10 +5,12 @@ go 1.21.5
 require (
 	cloud.google.com/go/vision v1.2.0
 	cloud.google.com/go/vision/v2 v2.7.5
+	github.com/anthonynsimon/bild v0.13.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/tdewolff/canvas v0.0.0-20231218015800-2ad5075e9362
 	github.com/urfave/cli/v2 v2.27.1
 	golang.org/x/sync v0.4.0
+	golang.org/x/text v0.13.0
 )
 
 require (
@@ -41,7 +43,6 @@ require (
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.13.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
 	gonum.org/v1/plot v0.14.0 // indirect
 	google.golang.org/api v0.149.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
