@@ -11,6 +11,7 @@ import (
 	"github.com/RadhiFadlillah/vision-my-pdf/internal/cleaner"
 	"github.com/RadhiFadlillah/vision-my-pdf/internal/vision"
 	"github.com/go-shiori/dom"
+	"golang.org/x/net/html"
 )
 
 var rxSymbolOnly = regexp.MustCompile(`^[^\p{L}\p{N}\s]+$`)
@@ -109,31 +110,46 @@ func pageToHOCR(tcl cleaner.Cleaner, page vision.Page) string {
 			dom.AppendChild(pPar, spanLine)
 
 			// Process each word in line
-			for _, w := range l.Words {
+			for i, w := range l.Words {
 				wordCounter++
+
+				// Check if line already have words
+				var prevSpanWord *html.Node
+				if children := dom.Children(spanLine); len(children) > 0 {
+					prevSpanWord = children[len(children)-1]
+				}
+
+				// Get current word text
+				wordText := wordToText(w)
+				wordText = tcl.Clean(wordText)
+				wordText = strings.TrimSpace(wordText)
+
+				// If previous span exist, and current or previous word only
+				// contains symbol, put current word in the previous span.
+				if prevSpanWord != nil && i > 0 {
+					prevSpanTitle := dom.GetAttribute(prevSpanWord, "title")
+					prevSpanText := dom.TextContent(prevSpanWord)
+
+					if rxSymbolOnly.MatchString(prevSpanText) || rxSymbolOnly.MatchString(wordText) {
+						dom.SetTextContent(prevSpanWord, prevSpanText+wordText)
+
+						// While on it, adjust the bounding box for prev span
+						if prevSpanRect, valid := stringToRect(prevSpanTitle); valid {
+							newRect := prevSpanRect.Union(w.BoundingBox)
+							dom.SetAttribute(prevSpanWord, "title", rectToString(newRect))
+						}
+
+						continue
+					}
+				}
 
 				// Create element for word, then put it to line
 				spanWord := dom.CreateElement("span")
 				dom.SetAttribute(spanWord, "class", "ocrx_word")
 				dom.SetAttribute(spanWord, "id", fmt.Sprintf("word_1_%d", wordCounter))
 				dom.SetAttribute(spanWord, "title", rectToString(w.BoundingBox))
+				dom.SetTextContent(spanWord, wordText)
 				dom.AppendChild(spanLine, spanWord)
-
-				// Get the previous sibling of span word
-				prevSpanWord := dom.PreviousElementSibling(spanWord)
-
-				// Set word text
-				wordText := wordToText(w)
-				wordText = tcl.Clean(wordText)
-				wordText = strings.TrimSpace(wordText)
-
-				// If its text only contains symbol, put it in the previous span
-				if rxSymbolOnly.MatchString(wordText) && prevSpanWord != nil {
-					dom.SetTextContent(prevSpanWord, dom.TextContent(prevSpanWord)+wordText)
-					spanLine.RemoveChild(spanWord)
-				} else {
-					dom.SetTextContent(spanWord, wordText)
-				}
 			}
 		}
 	}
@@ -146,4 +162,13 @@ func rectToString(rect image.Rectangle) string {
 	return fmt.Sprintf("bbox %d %d %d %d",
 		rect.Min.X, rect.Min.Y,
 		rect.Max.X, rect.Max.Y)
+}
+
+func stringToRect(s string) (image.Rectangle, bool) {
+	var minX, minY, maxX, maxY int
+	_, err := fmt.Sscanf(s, "bbox %d %d %d %d", &minX, &minY, &maxX, &maxY)
+	if err != nil {
+		return image.Rectangle{}, false
+	}
+	return image.Rect(minX, minY, maxX, maxY), true
 }
