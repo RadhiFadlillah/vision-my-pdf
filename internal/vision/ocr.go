@@ -90,9 +90,26 @@ func parseParagraph(paragraph *visionpb.Paragraph) Paragraph {
 	var words []Word
 	for _, word := range paragraph.Words {
 		parsedWord := parseWord(word)
-		if len(parsedWord.Symbols) > 0 {
-			words = append(words, parsedWord)
+
+		// If parsed word is empty, skip
+		if len(parsedWord.Symbols) == 0 {
+			continue
 		}
+
+		// If there are no separator between parsed word and the last one, merge it
+		if nWord := len(words); nWord > 0 {
+			lastWord := words[nWord-1]
+			if lastWord.Suffix == "" && parsedWord.Prefix == "" {
+				lastWord.Symbols = append(lastWord.Symbols, parsedWord.Symbols...)
+				lastWord.BoundingBox = lastWord.BoundingBox.Union(parsedWord.BoundingBox)
+				lastWord.Suffix = parsedWord.Suffix
+				words[nWord-1] = lastWord
+				continue
+			}
+		}
+
+		// Save the parsed word
+		words = append(words, parsedWord)
 	}
 
 	// Separate word to lines
