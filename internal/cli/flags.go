@@ -8,9 +8,10 @@ import (
 
 const (
 	// Flag names for app worker and output
-	_force    = "force"
-	_worker   = "worker"
-	_genDebug = "gen-debug"
+	_force       = "force"
+	_worker      = "worker"
+	_genDebug    = "gen-debug"
+	_montageSize = "montage"
 
 	// Flag names for OCR parameters
 	_sortVertical = "sort-vertical"
@@ -47,6 +48,12 @@ var appFlags = []cli.Flag{
 		Name:    _genDebug,
 		Aliases: []string{"gd"},
 		Usage:   "generate debug image",
+	},
+	&cli.IntFlag{
+		Name:    _montageSize,
+		Aliases: []string{"m"},
+		Usage:   "montage image size (must be between 1 and 5)",
+		Value:   1,
 	},
 
 	// Flags for OCR parameters

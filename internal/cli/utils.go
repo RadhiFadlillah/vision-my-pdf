@@ -88,7 +88,7 @@ func fileExist(f string) bool {
 	return err == nil && !fs.IsDir()
 }
 
-func saveOcrRaw(path string, page *vision.Page) error {
+func saveOcrRaw(path string, page vision.Page) error {
 	dst, err := os.Create(path)
 	if err != nil {
 		return err

@@ -4,41 +4,29 @@ import (
 	"bytes"
 	"context"
 	"image/png"
-	"path/filepath"
 	"strings"
 
 	vision "cloud.google.com/go/vision/apiv1"
 	visionpb "cloud.google.com/go/vision/v2/apiv1/visionpb"
-	"github.com/anthonynsimon/bild/effect"
-	"github.com/anthonynsimon/bild/imgio"
+	"github.com/RadhiFadlillah/vision-my-pdf/internal/montage"
 )
 
-func ParseImage(ctx context.Context, file string) (*Page, error) {
+func ParseMontage(ctx context.Context, montage montage.Montage) ([]Page, error) {
 	// Open vision client API
 	client, err := vision.NewImageAnnotatorClient(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Open file
-	img, err := imgio.Open(file)
-	if err != nil {
-		return nil, err
-	}
-
 	// Make sure image is not empty
-	bounds := img.Bounds().Size()
+	bounds := montage.Image.Bounds().Size()
 	if valid := bounds.X > 1 && bounds.Y > 1; !valid {
 		return nil, nil
 	}
 
-	// Invert image, since Google vision seems to yield better performance
-	// with white text on black background.
-	inverted := effect.Invert(img)
-
 	// Encode to the new reader
 	var buf bytes.Buffer
-	err = png.Encode(&buf, inverted)
+	err = png.Encode(&buf, montage.Image)
 	if err != nil {
 		return nil, err
 	}
@@ -60,24 +48,44 @@ func ParseImage(ctx context.Context, file string) (*Page, error) {
 		return nil, nil
 	}
 
-	// Create absolute path to file
-	absPath, err := filepath.Abs(file)
-	if err != nil {
-		absPath = file
-	}
-
-	// Parse page
-	result := Page{Image: absPath, BoundingBox: img.Bounds()}
+	// Extract each paragraphs from OCR result
+	var paragraphs []Paragraph
 	for _, page := range annotations.Pages {
 		for _, block := range page.Blocks {
 			for _, paragraph := range block.Paragraphs {
 				p := parseParagraph(paragraph)
-				result.Paragraphs = append(result.Paragraphs, p)
+				paragraphs = append(paragraphs, p)
 			}
 		}
 	}
 
-	return &result, nil
+	// Split paragraphs to each page
+	var pages []Page
+	var paragraphCursor int
+
+	for i, imgPath := range montage.Paths {
+		// Create the page
+		pageYLimit := montage.YLimits[i]
+		page := Page{
+			Image:       imgPath,
+			BoundingBox: montage.Bounds[i],
+		}
+
+		// Save paragraphs for current page
+		for paragraphCursor < len(paragraphs) {
+			paragraph := paragraphs[paragraphCursor]
+			if paragraph.BoundingBox.Max.Y >= pageYLimit {
+				break
+			}
+
+			page.Paragraphs = append(page.Paragraphs, paragraph)
+			paragraphCursor++
+		}
+
+		pages = append(pages, page)
+	}
+
+	return pages, nil
 }
 
 func parseParagraph(paragraph *visionpb.Paragraph) Paragraph {

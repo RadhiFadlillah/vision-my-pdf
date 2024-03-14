@@ -2,29 +2,23 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
 	fp "path/filepath"
 	"sort"
 	"sync"
 
+	"github.com/RadhiFadlillah/vision-my-pdf/internal/montage"
 	"github.com/RadhiFadlillah/vision-my-pdf/internal/vision"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/semaphore"
 )
 
-type OcrOptions struct {
-	NWorker       int64
-	RewriteOutput bool
-}
-
-func runOCR(imagePaths []string, outputDir string, opts OcrOptions) ([]vision.Page, error) {
+func runOCR(montages []montage.Montage, outputDir string, nWorker int64) ([]vision.Page, error) {
 	// Prepare concurrent helper
 	var wg sync.WaitGroup
 	var mut sync.Mutex
 	ctx := context.Background()
-	sem := semaphore.NewWeighted(opts.NWorker)
+	sem := semaphore.NewWeighted(nWorker)
 
 	// Prepare output and helper functions
 	var errors []error
@@ -43,20 +37,10 @@ func runOCR(imagePaths []string, outputDir string, opts OcrOptions) ([]vision.Pa
 	}
 
 	// Run OCR concurrently
-	for _, imgPath := range imagePaths {
+	for _, montage := range montages {
 		// Prepare output for this image
-		imgName := cleanFileName(imgPath) + ".json"
-		ocrOutput := fp.Join(outputDir, imgName)
-
-		// Check if output exists
-		if fileExist(ocrOutput) {
-			page, err := decodePageFile(ocrOutput)
-			if err == nil && page != nil && !opts.RewriteOutput {
-				savePage(*page)
-				logrus.Warnf("skipped \"%s\": already converted", imgPath)
-				continue
-			}
-		}
+		montageName := cleanFileName(montage.Name())
+		ocrOutput := fp.Join(outputDir, montageName+".json")
 
 		// Acquire semaphore
 		wg.Add(1)
@@ -66,7 +50,7 @@ func runOCR(imagePaths []string, outputDir string, opts OcrOptions) ([]vision.Pa
 		}
 
 		// Run OCR
-		imgPath := imgPath
+		montage := montage
 		go func() {
 			// Make sure to release semaphore
 			defer func() {
@@ -75,29 +59,31 @@ func runOCR(imagePaths []string, outputDir string, opts OcrOptions) ([]vision.Pa
 			}()
 
 			// Parse image
-			page, err := vision.ParseImage(ctx, imgPath)
+			pages, err := vision.ParseMontage(ctx, montage)
 			if err != nil {
-				msg := fmt.Errorf("ocr failed for \"%s\": %w", imgPath, err)
+				msg := fmt.Errorf("ocr failed for \"%s\": %w", montageName, err)
 				logrus.Warn(msg)
 				saveError(err)
 				return
 			}
 
-			if page == nil {
-				logrus.Warnf("ocr found no text in \"%s\"", imgPath)
+			if len(pages) == 0 {
+				logrus.Warnf("ocr found no text in \"%s\"", montageName)
 				return
 			}
 
 			// Save parse result to file
-			if err = saveOcrRaw(ocrOutput, page); err != nil {
-				msg := fmt.Errorf("save ocr result failed for \"%s\": %w", imgPath, err)
-				logrus.Warn(msg)
-				saveError(err)
-				return
-			}
+			for _, page := range pages {
+				if err = saveOcrRaw(ocrOutput, page); err != nil {
+					msg := fmt.Errorf("save ocr result failed for \"%s\": %w", page.Image, err)
+					logrus.Warn(msg)
+					saveError(err)
+					return
+				}
 
-			savePage(*page)
-			logrus.Printf("converted \"%s\"", imgPath)
+				savePage(page)
+				logrus.Printf("converted \"%s\"", page.Image)
+			}
 		}()
 	}
 
@@ -119,20 +105,4 @@ func runOCR(imagePaths []string, outputDir string, opts OcrOptions) ([]vision.Pa
 
 	logrus.Print("ocr finished")
 	return pages, nil
-}
-
-func decodePageFile(path string) (*vision.Page, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	var page vision.Page
-	err = json.NewDecoder(f).Decode(&page)
-	if err != nil {
-		return nil, err
-	}
-
-	return &page, nil
 }

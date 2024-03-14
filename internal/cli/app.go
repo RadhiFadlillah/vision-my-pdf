@@ -1,12 +1,17 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 	"sort"
 	"time"
 
+	"github.com/RadhiFadlillah/vision-my-pdf/internal/montage"
+	"github.com/RadhiFadlillah/vision-my-pdf/internal/vision"
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
 
@@ -64,10 +69,61 @@ func appActionHandler() cli.ActionFunc {
 			return err
 		}
 
+		// Adjust montage size
+		montageSize := c.Int(_montageSize)
+		if montageSize < 1 {
+			montageSize = 1
+		} else if montageSize > 5 {
+			montageSize = 5
+		}
+
+		// Filter images to be montaged
+		rewriteOutput := c.Bool(_force)
+		var montageQueue []string
+		for _, imgPath := range imagePaths {
+			// Create absolute path to image
+			absPath, err := filepath.Abs(imgPath)
+			if err != nil {
+				absPath = imgPath
+			}
+
+			// Check if OCR cache for this image exists
+			imgName := cleanFileName(imgPath)
+			ocrOutput := filepath.Join(cacheDir, imgName+".json")
+
+			if fileExist(ocrOutput) {
+				page, err := decodePageFile(ocrOutput)
+				if err == nil && page != nil && !rewriteOutput {
+					logrus.Warnf("skipped \"%s\": already converted", imgName)
+					continue
+				}
+			}
+
+			// Save this image in the queue to be montaged
+			montageQueue = append(montageQueue, absPath)
+		}
+
+		// Generate montages
+		var montages []montage.Montage
+		queueSize := len(montageQueue)
+
+		for i := 0; i < queueSize; i += montageSize {
+			limit := i + montageSize
+			if limit > queueSize {
+				limit = queueSize
+			}
+
+			montage, err := montage.Create(montageQueue[i:limit]...)
+			if err != nil {
+				return err
+			}
+
+			montages = append(montages, montage)
+			logrus.Printf("generate montage for %s", montage.Name())
+		}
+
 		// Run OCR concurrently
-		pages, err := runOCR(imagePaths, cacheDir, OcrOptions{
-			NWorker:       nWorker,
-			RewriteOutput: c.Bool(_force)})
+		pages, err := runOCR(montages, cacheDir, nWorker)
 		if err != nil {
 			return err
 		}
@@ -118,4 +174,19 @@ func appActionHandler() cli.ActionFunc {
 
 		return nil
 	}
+}
+func decodePageFile(path string) (*vision.Page, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	var page vision.Page
+	err = json.NewDecoder(f).Decode(&page)
+	if err != nil {
+		return nil, err
+	}
+
+	return &page, nil
 }
