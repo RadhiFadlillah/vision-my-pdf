@@ -3,6 +3,7 @@ package vision
 import (
 	"bytes"
 	"context"
+	"image"
 	"image/png"
 	"strings"
 
@@ -49,40 +50,39 @@ func ParseMontage(ctx context.Context, montage montage.Montage) ([]Page, error) 
 	}
 
 	// Extract each paragraphs from OCR result
-	var paragraphs []Paragraph
-	for _, page := range annotations.Pages {
-		for _, block := range page.Blocks {
-			for _, paragraph := range block.Paragraphs {
-				p := parseParagraph(paragraph)
-				paragraphs = append(paragraphs, p)
+	var montageParagraphs []Paragraph
+	for _, visionPage := range annotations.Pages {
+		for _, visionBlock := range visionPage.Blocks {
+			for _, visionParagraph := range visionBlock.Paragraphs {
+				p := parseParagraph(visionParagraph)
+				montageParagraphs = append(montageParagraphs, p)
 			}
 		}
 	}
 
 	// Split paragraphs to each page
 	var pages []Page
-	var paragraphCursor int
+	var montageParagraphCursor int
 
 	for i, imgPath := range montage.Paths {
-		// Create the page
-		pageYLimit := montage.YLimits[i]
-		page := Page{
-			Image:       imgPath,
-			BoundingBox: montage.Bounds[i],
-		}
-
 		// Save paragraphs for current page
-		for paragraphCursor < len(paragraphs) {
-			paragraph := paragraphs[paragraphCursor]
-			if paragraph.BoundingBox.Max.Y >= pageYLimit {
+		var paragraphs []Paragraph
+		for montageParagraphCursor < len(montageParagraphs) {
+			paragraph := montageParagraphs[montageParagraphCursor]
+			if !paragraph.BoundingBox.In(montage.Bounds[i]) {
 				break
 			}
 
-			page.Paragraphs = append(page.Paragraphs, paragraph)
-			paragraphCursor++
+			paragraphs = append(paragraphs, paragraph)
+			montageParagraphCursor++
 		}
 
-		pages = append(pages, page)
+		// Save the page
+		pages = append(pages, Page{
+			Image:       imgPath,
+			BoundingBox: montage.Bounds[i],
+			Paragraphs:  paragraphs,
+		}.Offset(image.Pt(0, -montage.Bounds[i].Min.Y)))
 	}
 
 	return pages, nil

@@ -11,10 +11,9 @@ import (
 )
 
 type Montage struct {
-	Image   image.Image
-	Paths   []string
-	YLimits []int
-	Bounds  []image.Rectangle
+	Image  image.Image
+	Paths  []string
+	Bounds []image.Rectangle
 }
 
 func Create(imagePaths ...string) (Montage, error) {
@@ -33,10 +32,9 @@ func Create(imagePaths ...string) (Montage, error) {
 		imgRect := img.Bounds()
 
 		return Montage{
-			Image:   img,
-			Paths:   []string{imagePaths[0]},
-			YLimits: []int{imgRect.Dy()},
-			Bounds:  []image.Rectangle{imgRect},
+			Image:  img,
+			Paths:  []string{imagePaths[0]},
+			Bounds: []image.Rectangle{imgRect},
 		}, nil
 	}
 
@@ -67,7 +65,6 @@ func Create(imagePaths ...string) (Montage, error) {
 
 	// Put each image in the canvas
 	var yOffset int
-	var yLimits []int
 	var imageBounds []image.Rectangle
 	for _, img := range images {
 		// Get the image bound
@@ -81,8 +78,7 @@ func Create(imagePaths ...string) (Montage, error) {
 		// Increase the Y offset
 		yOffset += imgHeight
 
-		// Save the limit and boundaries
-		yLimits = append(yLimits, yOffset)
+		// Save the boundaries
 		imageBounds = append(imageBounds, drawArea)
 	}
 
@@ -92,10 +88,9 @@ func Create(imagePaths ...string) (Montage, error) {
 
 	// Return the montage
 	return Montage{
-		Image:   canvas,
-		Paths:   imagePaths,
-		YLimits: yLimits,
-		Bounds:  imageBounds,
+		Image:  canvas,
+		Paths:  imagePaths,
+		Bounds: imageBounds,
 	}, nil
 }
 
