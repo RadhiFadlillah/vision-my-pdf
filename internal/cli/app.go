@@ -153,7 +153,7 @@ func appActionHandler() cli.ActionFunc {
 
 		// Create text from OCR page
 		tcl := prepareTextCleaner(c)
-		err = savePagesAsText(tcl, pages, rootDir)
+		err = savePagesAsText(tcl, pages, rootDir, c.Bool(_mergeNewLine))
 		if err != nil {
 			return err
 		}

@@ -15,6 +15,7 @@ const (
 
 	// Flag names for OCR parameters
 	_sortVertical = "sort-vertical"
+	_mergeNewLine = "merge-newline"
 
 	// Flag names for text cleaner
 	_noDiacritic      = "no-diacritic"
@@ -61,6 +62,11 @@ var appFlags = []cli.Flag{
 		Name:    _sortVertical,
 		Aliases: []string{"sv"},
 		Usage:   "sort paragraphs vertically, not work for multi column",
+	},
+	&cli.BoolFlag{
+		Name:    _mergeNewLine,
+		Aliases: []string{"mn"},
+		Usage:   "merge newlines in a paragraph for text output",
 	},
 
 	// Flags for text cleaner

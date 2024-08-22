@@ -132,7 +132,7 @@ func parseParagraph(paragraph *visionpb.Paragraph) Paragraph {
 		currentWord.Prefix = previousWord.Suffix + currentWord.Prefix
 
 		// If current word has new line, save the new line
-		if strings.Contains(currentWord.Prefix, "\n") {
+		if strings.Contains(currentWord.Prefix, "↵") {
 			newLineWords := append([]Word{}, words[cursor:i]...)
 			lineWords = append(lineWords, newLineWords)
 			cursor = i
@@ -220,10 +220,10 @@ func createBreakCharacter(symbol *visionpb.Symbol) (prefix, suffix string) {
 
 	switch db.Type {
 	case visionpb.TextAnnotation_DetectedBreak_HYPHEN:
-		bc = "-\n"
+		bc = "-↵"
 	case visionpb.TextAnnotation_DetectedBreak_LINE_BREAK,
 		visionpb.TextAnnotation_DetectedBreak_EOL_SURE_SPACE:
-		bc = "\n"
+		bc = " ↵"
 	default:
 		bc = " "
 	}

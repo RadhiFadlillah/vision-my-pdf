@@ -13,8 +13,9 @@ import (
 )
 
 var rxSpaces = regexp.MustCompile(` +`)
+var rxHyphenSpace = regexp.MustCompile(`(?m)-\s*$`)
 
-func savePagesAsText(tcl cleaner.Cleaner, pages []vision.Page, rootDir string) error {
+func savePagesAsText(tcl cleaner.Cleaner, pages []vision.Page, rootDir string, mergeNewLine bool) error {
 	// Process each page
 	for _, page := range pages {
 		// Prepare output for this page
@@ -22,7 +23,7 @@ func savePagesAsText(tcl cleaner.Cleaner, pages []vision.Page, rootDir string) e
 		textOutput := fp.Join(rootDir, imgName) + "_hocr.txt"
 
 		// Build text for this page
-		pageText := pageToText(page)
+		pageText := pageToText(page, mergeNewLine)
 		pageText = tcl.Clean(pageText)
 
 		// Save text to storage
@@ -35,20 +36,20 @@ func savePagesAsText(tcl cleaner.Cleaner, pages []vision.Page, rootDir string) e
 	return nil
 }
 
-func pageToText(page vision.Page) string {
+func pageToText(page vision.Page, mergeNewLine bool) string {
 	var sb strings.Builder
 	for _, p := range page.Paragraphs {
-		sb.WriteString(paragraphToText(p))
+		sb.WriteString(paragraphToText(p, mergeNewLine))
 		sb.WriteString("\n\n")
 	}
 	return sb.String()
 }
 
-func paragraphToText(p vision.Paragraph) string {
+func paragraphToText(p vision.Paragraph, mergeNewLine bool) string {
 	// Extract texts from lines
 	var sb strings.Builder
 	for _, l := range p.Lines {
-		sb.WriteString(lineToText(l))
+		sb.WriteString(lineToText(l, mergeNewLine))
 	}
 	text := sb.String()
 
@@ -60,12 +61,22 @@ func paragraphToText(p vision.Paragraph) string {
 	return text
 }
 
-func lineToText(l vision.Line) string {
+func lineToText(l vision.Line, mergeNewLine bool) string {
 	var sb strings.Builder
 	for _, w := range l.Words {
 		sb.WriteString(wordToText(w))
 	}
-	return sb.String()
+
+	text := sb.String()
+	if mergeNewLine {
+		text = strings.ReplaceAll(text, "↵", "")
+		text = rxHyphenSpace.ReplaceAllString(text, "-")
+	} else {
+		text = strings.ReplaceAll(text, "-↵", "-\n")
+		text = strings.ReplaceAll(text, " ↵", "\n")
+	}
+
+	return text
 }
 
 func wordToText(w vision.Word) string {
